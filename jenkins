@@ -1,1 +1,49 @@
+pipeline {
+  agent any
+
+  environment {
+    DEPLOY_SERVER = 'ubuntu@16.171.27.58'    // change as needed
+    DEPLOY_PATH = '/var/www/myapp'           // change as needed
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout([$class: 'GitSCM', branches: [[name: '*/main']],
+                  userRemoteConfigs: [[url: 'git@github.com:Vishal4871/App_workshop.git']]] )
+      }
+    }
+
+    stage('Build') {
+      steps {
+        echo 'No build step for simple static site — placeholder'
+        // e.g., sh 'npm install && npm run build'
+      }
+    }
+
+    stage('Test') {
+      steps {
+        echo 'Run tests if any'
+        // e.g., sh 'npm test'
+      }
+    }
+
+    stage('Deploy') {
+      steps {
+        // Use SSH agent credential configured in Jenkins
+        sshagent (credentials: ['ec2-ssh-key']) {
+          sh """
+            ssh -o StrictHostKeyChecking=no $DEPLOY_SERVER 'mkdir -p ${DEPLOY_PATH}'
+            scp -o StrictHostKeyChecking=no -r * ${DEPLOY_SERVER}:${DEPLOY_PATH}/
+          """
+        }
+      }
+    }
+  }
+
+  post {
+    success { echo 'Deploy succeeded' }
+    failure { echo 'Deploy failed' }
+  }
+}
 
